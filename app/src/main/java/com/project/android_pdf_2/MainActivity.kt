@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
         val text : String = "NRK Biz Park"
         val pdfDocument = PdfDocument()
         val textPaint = Paint()
-        val bounds = Rect()
         val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, 1).create()
         val myPage = pdfDocument.startPage(myPageInfo)
         val canvas = myPage.canvas
@@ -42,8 +41,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        textPaint.getTextBounds(text, 0, text.length, bounds)
-        canvas.drawText(text, (canvas.width / 2).toFloat()-bounds.width()/2, 15f, textPaint)
+        canvas.drawText(text, (canvas.width / 2).toFloat(), 15f, textPaint)
         pdfDocument.finishPage(myPage)
         @SuppressLint("SimpleDateFormat")
         val formattedDate = SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
