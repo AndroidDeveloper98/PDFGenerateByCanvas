@@ -26,17 +26,11 @@ class MainActivity : AppCompatActivity() {
     private var pagewidth = 792
     private var verticallyWidth = 100f
     private var inspectionListVerticallyWidth = 100f
-    private var bmp: Bitmap? = null
-    private var scaledbmp: Bitmap? = null
     private var inspectionList: ArrayList<String> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         dialog = Dialog(this)
-        bmp = BitmapFactory.decodeResource(resources, R.drawable.ic_dummy)
-        scaledbmp = Bitmap.createScaledBitmap(bmp!!, 100, 100, false)
-
-
 
         findViewById<Button>(R.id.idBtnGeneratePDF).setOnClickListener {
             if (findViewById<EditText>(R.id.etListItem).text.trim().toString().isNotEmpty()) {
@@ -287,10 +281,12 @@ class MainActivity : AppCompatActivity() {
         )
 
         //Draw Project image
+        val bmpImage = BitmapFactory.decodeResource(resources, R.drawable.ic_dummy)
+        val scaledbmpImage = Bitmap.createScaledBitmap(bmpImage, 100, 100, false)
         verticallyWidth += 60
         canvas.drawBitmap(
-            scaledbmp!!,
-            (canvas.width / 2 - scaledbmp!!.width / 2).toFloat(),
+            scaledbmpImage,
+            (canvas.width / 2 - scaledbmpImage!!.width / 2).toFloat(),
             verticallyWidth,
             imagePaint
         )
