@@ -7,6 +7,8 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+
+
     <Button
         android:id="@+id/idBtnGeneratePDF"
         android:layout_width="wrap_content"
@@ -16,5 +18,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/etListItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:maxLength="2"
+        android:inputType="numberSigned"
+        android:hint="Enter element size"
+        app:layout_constraintBottom_toTopOf="@+id/idBtnGeneratePDF"
+        app:layout_constraintEnd_toEndOf="@+id/idBtnGeneratePDF"
+        app:layout_constraintStart_toStartOf="@+id/idBtnGeneratePDF" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

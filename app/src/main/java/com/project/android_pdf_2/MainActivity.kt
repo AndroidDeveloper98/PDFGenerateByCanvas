@@ -1,6 +1,7 @@
 package com.project.android_pdf_2
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.*
 import android.graphics.pdf.PdfDocument
@@ -8,18 +9,17 @@ import android.graphics.pdf.PdfDocument.PageInfo
 import android.icu.text.SimpleDateFormat
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
-import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
-import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
     private var pageHeight = 1120
@@ -28,107 +28,120 @@ class MainActivity : AppCompatActivity() {
     private var inspectionListVerticallyWidth = 100f
     private var bmp: Bitmap? = null
     private var scaledbmp: Bitmap? = null
-    private var inspectionList : ArrayList<String> = ArrayList()
+    private var inspectionList: ArrayList<String> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        bmp = BitmapFactory.decodeResource(resources, R.drawable.ic_dummy)
+        dialog = Dialog(this)
         bmp = BitmapFactory.decodeResource(resources, R.drawable.ic_dummy)
         scaledbmp = Bitmap.createScaledBitmap(bmp!!, 100, 100, false)
 
-        for (i in 0..20){
-            inspectionList.add("")
-        }
+
 
         findViewById<Button>(R.id.idBtnGeneratePDF).setOnClickListener {
-            generatePdf()
-        }
-
-    }
-
-    private fun generatePdfTest() {
-        val pdfDocument = PdfDocument()
-        for (i in 0..5) {
-            val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, i).create()
-            val myPage = pdfDocument.startPage(myPageInfo)
-            pdfDocument.finishPage(myPage)
-        }
-        @SuppressLint("SimpleDateFormat") val formattedDate =
-            SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
-        val date = Date()
-        val fileNameWithDate = formattedDate.format(date)
-        val file = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "ReportFile - $fileNameWithDate.pdf"
-        )
-        try {
-            pdfDocument.writeTo(FileOutputStream(file))
-            Toast.makeText(
-                this@MainActivity, "PDF file generated successfully.", Toast.LENGTH_SHORT
-            ).show()
-            val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, file)
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = u
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            startActivity(intent)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-
-        pdfDocument.close()
-    }
-
-    var pageNumber: Int = 0
-    private fun generatePdf() {
-        val pdfDocument = PdfDocument()
-        var pdfSize = inspectionList.size/5
-        for (i in 0..pdfSize) {
-            val textPaint = Paint()
-            val imagePaint = Paint()
-            val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, i).create()
-            var myPage = pdfDocument.startPage(myPageInfo)
-            val canvas = myPage.canvas
-            //Page No.
-            textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            textPaint.textSize = 16f
-            textPaint.color = ContextCompat.getColor(this, R.color.black)
-            textPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText("2 of 2", 80f, 40f, textPaint)
-
-            for (i in 0..5) {
-
-                if (i > 0) {
-                    inspectionListVerticallyWidth += 20
+            if (findViewById<EditText>(R.id.etListItem).text.trim().toString().isNotEmpty()) {
+                val size = findViewById<EditText>(R.id.etListItem).text.trim().toString().toInt()
+                for (i in 0 until size) {
+                    inspectionList.add("")
                 }
+                createPdfTask()
+            }
+        }
 
-                if (inspectionListVerticallyWidth > 1000) {
-                    inspectionListVerticallyWidth = 80f
-                    //continue
-                    //Log.e("inspectionListVerticallyWidth", "--------$inspectionListVerticallyWidth")
-                } else {
-                    //Image
-                    if (inspectionList.size>0){
-                        createInspectionCell(canvas, imagePaint, textPaint)
+    }
+
+    private var dialog: Dialog? = null
+    var mPdf: File? = null
+    private fun createPdfTask() {
+        lifecycleScope.executeAsyncTask(
+            onPreExecute = {
+                AppProgressDialog.show(dialog!!)
+            },
+            doInBackground = {
+                generatePdf()
+                mPdf
+            },
+            onPostExecute = { file ->
+                file?.let {
+                    Toast.makeText(
+                        this@MainActivity, "PDF file generated successfully.", Toast.LENGTH_SHORT
+                    ).show()
+                    val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, it)
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.data = u
+                    intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    startActivity(intent)
+                }
+                AppProgressDialog.hide(dialog!!)
+                resetDialog()
+            }
+        )
+    }
+
+    private fun resetDialog() {
+        dialog = null
+        dialog = Dialog(this@MainActivity)
+        pdfDocument = PdfDocument()
+        verticallyWidth = 100f
+        inspectionListVerticallyWidth = 100f
+    }
+
+    private var pdfDocument = PdfDocument()
+    private fun generatePdf() {
+        var pdfPageSize = if (inspectionList.size > 5) {
+            if (inspectionList.size % 5 > 0) {
+                inspectionList.size / 5 + 1
+            } else {
+                inspectionList.size / 5
+            }
+        } else {
+            if (inspectionList.isNotEmpty()) {
+                1
+            } else {
+                0
+            }
+        }
+        for (i in 0..pdfPageSize) {
+            if (i == 0) {
+                generatePdfFrontPage(pdfPageSize + 1)
+            } else {
+                val textPaint = Paint()
+                val imagePaint = Paint()
+                val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, i + 1).create()
+                var myPage = pdfDocument.startPage(myPageInfo)
+                val canvas = myPage.canvas
+                //Page No.
+                textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                textPaint.textSize = 16f
+                textPaint.color = ContextCompat.getColor(this, R.color.black)
+                textPaint.textAlign = Paint.Align.CENTER
+                canvas.drawText("${i + 1} of ${pdfPageSize + 1}", 80f, 40f, textPaint)
+                for (ii in 0..5) {
+                    if (ii > 0) {
+                        inspectionListVerticallyWidth += 20
+                    }
+                    if (inspectionListVerticallyWidth > 1000) {
+                        inspectionListVerticallyWidth = 80f
+                    } else {
+                        if (inspectionList.size > 0) {
+                            createInspectionCell(canvas, imagePaint, textPaint)
+                        }
                     }
                 }
+                //Footer
+                textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                textPaint.textSize = 14f
+                textPaint.color = ContextCompat.getColor(this, R.color.black)
+                textPaint.textAlign = Paint.Align.CENTER
+                canvas.drawText(
+                    "@2022 Inspection Audit",
+                    (canvas.width / 2).toFloat(),
+                    1080f,
+                    textPaint
+                )
+                pdfDocument.finishPage(myPage)
             }
-
-            //Footer
-            textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            textPaint.textSize = 14f
-            textPaint.color = ContextCompat.getColor(this, R.color.black)
-            textPaint.textAlign = Paint.Align.CENTER
-            canvas.drawText(
-                "@2022 Inspection Audit",
-                (canvas.width / 2).toFloat(),
-                1080f,
-                textPaint
-            )
-
-            pdfDocument.finishPage(myPage)
-
         }
-
 
         @SuppressLint("SimpleDateFormat") val formattedDate =
             SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
@@ -140,77 +153,7 @@ class MainActivity : AppCompatActivity() {
         )
         try {
             pdfDocument.writeTo(FileOutputStream(file))
-            Toast.makeText(
-                this@MainActivity, "PDF file generated successfully.", Toast.LENGTH_SHORT
-            ).show()
-            val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, file)
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = u
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            startActivity(intent)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        pdfDocument.close()
-    }
-
-    private fun generateNextPagePdf() {
-        val pdfDocument = PdfDocument()
-        val textPaint = Paint()
-        val imagePaint = Paint()
-
-        val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, pageNumber).create()
-        val myPage = pdfDocument.startPage(myPageInfo)
-        val canvas = myPage.canvas
-        //Page No.
-        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        textPaint.textSize = 16f
-        textPaint.color = ContextCompat.getColor(this, R.color.black)
-        textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("2 of 2", 80f, 40f, textPaint)
-
-
-        for (i in 0..5) {
-
-            if (i > 0) {
-                inspectionListVerticallyWidth += 20
-            }
-
-            if (inspectionListVerticallyWidth > 1000) {
-
-            } else {
-                //Image
-                createInspectionCell(canvas, imagePaint, textPaint)
-            }
-        }
-
-        //Footer
-        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        textPaint.textSize = 14f
-        textPaint.color = ContextCompat.getColor(this, R.color.black)
-        textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("@2022 Inspection Audit", (canvas.width / 2).toFloat(), 1080f, textPaint)
-
-        pdfDocument.finishPage(myPage)
-
-        @SuppressLint("SimpleDateFormat") val formattedDate =
-            SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
-        val date = Date()
-        val fileNameWithDate = formattedDate.format(date)
-        val file = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "ReportFile - $fileNameWithDate.pdf"
-        )
-        try {
-            pdfDocument.writeTo(FileOutputStream(file))
-            Toast.makeText(
-                this@MainActivity, "PDF file generated successfully.", Toast.LENGTH_SHORT
-            ).show()
-            val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, file)
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = u
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            startActivity(intent)
+            mPdf = file
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -223,10 +166,10 @@ class MainActivity : AppCompatActivity() {
         textPaint: Paint
     ) {
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.ic_dummy)
-        val scaledbmp = Bitmap.createScaledBitmap(bmp, 120, 160, false)
+        val scaledbmp = Bitmap.createScaledBitmap(bmp, 140, 160, false)
         canvas.drawBitmap(
             scaledbmp,
-            (scaledbmp.width / 2).toFloat(),
+            60f,
             inspectionListVerticallyWidth,
             imagePaint
         )
@@ -248,7 +191,7 @@ class MainActivity : AppCompatActivity() {
             inspectionListVerticallyWidth,
             imagePaint
         )
-        if (inspectionList.size>0){
+        if (inspectionList.size > 0) {
             inspectionList.removeAt(0)
         }
     }
@@ -266,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         inspectionListVerticallyWidth += 20
         canvas.drawText(
             text,
-            (scaledbmp.width + 80).toFloat(),
+            (scaledbmp.width + 100).toFloat(),
             inspectionListVerticallyWidth,
             textPaint
         )
@@ -285,17 +228,15 @@ class MainActivity : AppCompatActivity() {
         inspectionListVerticallyWidth += 10
         canvas.drawText(
             text,
-            (scaledbmp.width + 80).toFloat(),
+            (scaledbmp.width + 100).toFloat(),
             inspectionListVerticallyWidth,
             textPaint
         )
     }
 
-    fun generatePDF(view: View?) {
-        val pdfDocument = PdfDocument()
+    private fun generatePdfFrontPage(pageSize: Int) {
         val textPaint = Paint()
         val imagePaint = Paint()
-        val rect = Rect()
         val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, 1).create()
         val myPage = pdfDocument.startPage(myPageInfo)
         val canvas = myPage.canvas
@@ -304,7 +245,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("1 of 2", 80f, 40f, textPaint)
+        canvas.drawText("1 of $pageSize", 80f, 40f, textPaint)
         //Title Heading
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         textPaint.textSize = 18f
@@ -457,28 +398,6 @@ class MainActivity : AppCompatActivity() {
         textPaint.textAlign = Paint.Align.CENTER
         canvas.drawText("@2022 Inspection Audit", (canvas.width / 2).toFloat(), 1080f, textPaint)
         pdfDocument.finishPage(myPage)
-        @SuppressLint("SimpleDateFormat") val formattedDate =
-            SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
-        val date = Date()
-        val fileNameWithDate = formattedDate.format(date)
-        val file = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "ReportFile - $fileNameWithDate.pdf"
-        )
-        try {
-            pdfDocument.writeTo(FileOutputStream(file))
-            Toast.makeText(
-                this@MainActivity, "PDF file generated successfully.", Toast.LENGTH_SHORT
-            ).show()
-            val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, file)
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = u
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            startActivity(intent)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        pdfDocument.close()
     }
 
 }
