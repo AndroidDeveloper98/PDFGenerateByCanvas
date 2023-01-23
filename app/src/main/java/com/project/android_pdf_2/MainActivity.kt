@@ -21,7 +21,7 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
     private var pageHeight = 1120
     private var pagewidth = 792
-    private var verticallyWidth = 50f
+    private var verticallyWidth = 100f
     private var bmp: Bitmap? = null
     private var scaledbmp: Bitmap? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +32,41 @@ class MainActivity : AppCompatActivity() {
         scaledbmp = Bitmap.createScaledBitmap(bmp!!, 100, 100, false)
     }
 
+    fun generatePdf(view: View?){
+        val pdfDocument = PdfDocument()
+
+        for (i in 0..5){
+            val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, i).create()
+            val myPage = pdfDocument.startPage(myPageInfo)
+            pdfDocument.finishPage(myPage)
+        }
+
+        @SuppressLint("SimpleDateFormat")
+        val formattedDate = SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
+        val date = Date()
+        val fileNameWithDate = formattedDate.format(date)
+        val file = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "ReportFile - $fileNameWithDate.pdf"
+        )
+        try {
+            pdfDocument.writeTo(FileOutputStream(file))
+            Toast.makeText(
+                this@MainActivity,
+                "PDF file generated successfully.",
+                Toast.LENGTH_SHORT
+            ).show()
+            val u = FileProvider.getUriForFile(this, this.applicationInfo.packageName, file)
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = u
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            startActivity(intent)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        pdfDocument.close()
+    }
+
     fun generatePDF(view: View?) {
         val pdfDocument = PdfDocument()
         val textPaint = Paint()
@@ -40,6 +75,12 @@ class MainActivity : AppCompatActivity() {
         val myPageInfo = PageInfo.Builder(pagewidth, pageHeight, 1).create()
         val myPage = pdfDocument.startPage(myPageInfo)
         val canvas = myPage.canvas
+        //Page No.
+        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        textPaint.textSize = 16f
+        textPaint.color = ContextCompat.getColor(this, R.color.black)
+        textPaint.textAlign = Paint.Align.CENTER
+        canvas.drawText("1 of 2", 80f, 40f, textPaint)
         //Title Heading
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         textPaint.textSize = 18f
@@ -51,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 30
+        verticallyWidth += 40
         canvas.drawText("Vijay Nagar", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //Total Inspection Count
@@ -59,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 30
+        verticallyWidth += 40
         canvas.drawText("12", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //Date
@@ -67,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 30
+        verticallyWidth += 40
         canvas.drawText("06-Jan-2023", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //Client Name
@@ -75,11 +116,11 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 30
+        verticallyWidth += 40
         canvas.drawText("Client Name : Sonu", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //Draw Project image
-        verticallyWidth +=50
+        verticallyWidth +=60
         canvas.drawBitmap(scaledbmp!!,(canvas.width/2 - scaledbmp!!.width/2).toFloat(),verticallyWidth,imagePaint)
 
         //Company Name
@@ -87,13 +128,13 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 150
+        verticallyWidth += 160
         canvas.drawText("IDA", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.sign)
         val scaledbmp = Bitmap.createScaledBitmap(bmp, 100, 100, false)
-        verticallyWidth +=50
+        verticallyWidth +=60
         canvas.drawBitmap(scaledbmp,(canvas.width/2 - scaledbmp.width/2).toFloat(),verticallyWidth,imagePaint)
 
         //Assign To Name
@@ -101,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 150
+        verticallyWidth += 160
         canvas.drawText("Monu", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
 
         //Assign To Name
@@ -109,7 +150,7 @@ class MainActivity : AppCompatActivity() {
         textPaint.textSize = 16f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        verticallyWidth += 80
+        verticallyWidth += 90
         canvas.drawText("Total #1 Inspection", (canvas.width / 2).toFloat(), verticallyWidth, textPaint)
         //
         val bounds = Rect()
@@ -117,40 +158,46 @@ class MainActivity : AppCompatActivity() {
         circlePaint.color = Color.RED
         circlePaint.isAntiAlias = true
         imagePaint.getTextBounds("0", 0, "0".length, bounds)
-        verticallyWidth += 80
-        canvas.drawCircle((canvas.width / 2).toFloat()-160, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
+        verticallyWidth += 90
+        canvas.drawCircle((canvas.width / 2).toFloat()-120, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textPaint.textSize = 18f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("1", (canvas.width / 2).toFloat()-160, verticallyWidth+8, textPaint)
+        canvas.drawText("1", (canvas.width / 2).toFloat()-120, verticallyWidth+8, textPaint)
 
         //
         circlePaint.color = Color.BLUE
-        canvas.drawCircle((canvas.width / 2).toFloat()-80, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
+        canvas.drawCircle((canvas.width / 2).toFloat()-40, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textPaint.textSize = 18f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("1", (canvas.width / 2).toFloat()-80, verticallyWidth+8, textPaint)
+        canvas.drawText("1", (canvas.width / 2).toFloat()-40, verticallyWidth+8, textPaint)
 
         //
         circlePaint.color = Color.YELLOW
-        canvas.drawCircle((canvas.width / 2).toFloat(), verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
+        canvas.drawCircle((canvas.width / 2).toFloat()+40, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textPaint.textSize = 18f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("1", (canvas.width / 2).toFloat(), verticallyWidth+8, textPaint)
+        canvas.drawText("1", (canvas.width / 2).toFloat()+40, verticallyWidth+8, textPaint)
 
         //
         circlePaint.color = Color.GREEN
-        canvas.drawCircle((canvas.width / 2).toFloat()+80, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
+        canvas.drawCircle((canvas.width / 2).toFloat()+120, verticallyWidth, (bounds.width() + 25).toFloat(), circlePaint)
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textPaint.textSize = 18f
         textPaint.color = ContextCompat.getColor(this, R.color.black)
         textPaint.textAlign = Paint.Align.CENTER
-        canvas.drawText("1", (canvas.width / 2).toFloat()+80, verticallyWidth+8, textPaint)
+        canvas.drawText("1", (canvas.width / 2).toFloat()+120, verticallyWidth+8, textPaint)
+        //Footer
+        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        textPaint.textSize = 14f
+        textPaint.color = ContextCompat.getColor(this, R.color.black)
+        textPaint.textAlign = Paint.Align.CENTER
+        canvas.drawText("@2022 Inspection Audit", (canvas.width / 2).toFloat(), 1080f, textPaint)
         pdfDocument.finishPage(myPage)
         @SuppressLint("SimpleDateFormat")
         val formattedDate = SimpleDateFormat("dd-MM-yyyy HH_mm_ss")
