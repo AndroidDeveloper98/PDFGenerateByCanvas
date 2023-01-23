@@ -1,5 +1,7 @@
-# Android-PDF_2
+# PDF File Generate by canvas in android 
 
-A simple app to generate PDF restaurant orders, no paper needed. I used Android Studio IDE for this mobile project:
+A simple app to generate PDF report file.
 
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg" width="40" height="40"/><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jetbrains/jetbrains-original.svg" width="40" height="40"/><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/androidstudio/androidstudio-original.svg" width="40" height="40" /><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/android/android-original-wordmark.svg"  width="40" height="40"/>
+
+
+![Screenshot_20230123_161107_Drive](https://user-images.githubusercontent.com/122687829/214020639-0c5ed4d5-88ac-4de5-be75-1a4581200b14.jpg)
